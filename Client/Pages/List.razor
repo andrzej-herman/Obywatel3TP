@@ -1,3 +1,45 @@
 ﻿@page "/list"
+
+@inject Blazored.LocalStorage.ILocalStorageService localStorage
 <PageTitle>Obywatel ver. 1.0</PageTitle>
-<p>Lista</p>
+<h2>Lista zarejestrowanych osób</h2>
+
+@if(registeredCitizens != null)
+{
+     <RadzenDataGrid AllowFiltering="true" AllowColumnResize="true" FilterMode="FilterMode.Simple" AllowSorting="true" PageSize="10" AllowPaging="true" PagerHorizontalAlign="HorizontalAlign.Left" ShowPagingSummary="true"
+     Data="@registeredCitizens" TItem="Citizen" ColumnWidth="200px" LogicalFilterOperator="LogicalFilterOperator.Or">
+          <Columns>
+              <RadzenDataGridColumn TItem="Citizen" Property="LastName" Filterable="true" Title="Nazwisko" TextAlign="TextAlign.Left" />
+              <RadzenDataGridColumn TItem="Citizen" Property="FirstName" Filterable="true" Title="Imię" TextAlign="TextAlign.Left" />
+              <RadzenDataGridColumn TItem="Citizen" Property="DateOfBirthString" Filterable="false" Title="Data urodzenia" TextAlign="TextAlign.Left" />
+              <RadzenDataGridColumn TItem="Citizen" Property="PESEL" Filterable="false" Title="PESEL" TextAlign="TextAlign.Left" />    
+          </Columns>
+    </RadzenDataGrid>
+}
+
+
+
+@*    public int Id { get; set; } 
+    public string FirstName { get; set; }
+    public string LastName { get; set; }
+    public DateTime DateOfBirth { get; set; }
+    public string Sex { get; set; }
+    public string PESEL { get; set; }*@
+
+
+
+@code {
+
+    List<Citizen> registeredCitizens;
+    int currentIndex = 0;
+
+    protected async override Task OnInitializedAsync()
+    {
+        var cookie = await localStorage.GetItemAsync<string>("citizens");
+        if (cookie != null)
+        {
+            registeredCitizens = JsonConvert.DeserializeObject<List<Citizen>>(cookie);
+            currentIndex = registeredCitizens.Count;
+        }
+    }
+}

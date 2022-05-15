@@ -1,6 +1,117 @@
 ﻿@page "/"
-<PageTitle>Obywatel ver. 1.0</PageTitle>
-<p>Formularz</p>
+@using Newtonsoft.Json
+@inject NotificationService notificationService
+@inject Blazored.LocalStorage.ILocalStorageService localStorage
 
-<RadzenButton ButtonStyle="ButtonStyle.Secondary">Przycisk</RadzenButton>
+<PageTitle>Obywatel ver. 1.0</PageTitle>
+<h2>Formularz rejestracji obywatela</h2>
+<div class="row mt-3">
+    <div class="col-lg-6">
+        <div class="row">
+            <div class="col-lg-4">
+                <RadzenLabel Text="Imię" />
+                <RadzenTextBox style="width: 100%;" Name="Imię"  @bind-Value=model.FirstName/>
+            </div>
+            <div class="col-lg-4">
+                <RadzenLabel Text="Nazwisko" />
+                <RadzenTextBox style="width: 100%;" Name="Nazwisko"  @bind-Value=model.LastName/>
+            </div>
+            <div class="col-lg-4">
+                <RadzenLabel Text="Data urodzenia" />
+                <RadzenDatePicker @bind-Value=model.DateOfBirth DateFormat="d" Class="w-100" Name="Data urodzenia" />
+            </div>
+        </div>
+        <div class="row mt-3">
+             <div class="col-lg-12">
+                <h5 class="mb-4">Proszę wybrać płeć</h5>
+                <RadzenRadioButtonList @bind-Value=model.SexId TValue="int">
+                    <Items>
+                        <RadzenRadioButtonListItem Text="Kobieta" Value="1" />
+                        <RadzenRadioButtonListItem Text="Mężczyzna" Value="2" />
+                    </Items>
+                </RadzenRadioButtonList>
+             </div>
+        </div>
+        <div class="row mt-3">
+             <div class="col-lg-12">
+                <RadzenButton ButtonStyle="ButtonStyle.Secondary" Click="CreateCitizen" >Zapisz</RadzenButton>
+             </div>
+        </div>
+    </div>
+    <div class="col-lg-6"></div>
+</div>
+
+
+@code {
+
+    AddCitizenModel model = new AddCitizenModel();
+    List<Citizen> registeredCitizens = new List<Citizen>();
+    int currentIndex = 0;
+
+    protected async override Task OnInitializedAsync()
+    {
+        var cookie = await localStorage.GetItemAsync<string>("citizens");
+        if (cookie != null)
+        {
+            registeredCitizens = JsonConvert.DeserializeObject<List<Citizen>>(cookie);
+            currentIndex = registeredCitizens.Count;
+        }
+    }
+
+
+    async Task CreateCitizen()
+    {
+        if (!ValidateCitizen(out string error))
+        {
+            notificationService.Notify(new NotificationMessage
+                {
+                    Severity = NotificationSeverity.Error,
+                    Summary = null,
+                    Detail = error
+                });
+            return;
+        }
+
+        currentIndex = registeredCitizens.Count;
+        var citizen = new Citizen
+            {
+                Id = currentIndex + 1,
+                FirstName = model.FirstName,
+                LastName = model.LastName,
+                DateOfBirth = model.DateOfBirth,
+                Sex = model.SexId == 1 ? "female" : "male"
+            };
+
+        citizen.GetPESEL(currentIndex);
+        registeredCitizens.Add(citizen);
+        var listToSave = JsonConvert.SerializeObject(registeredCitizens);
+        await localStorage.SetItemAsync("citizens", listToSave);
+
+        notificationService.Notify(new NotificationMessage
+                {
+                    Severity = NotificationSeverity.Success,
+                    Summary = null,
+                    Detail = "Obywatel został zarejestrowany"
+                });
+
+        model.Clear();
+    }
+
+    bool ValidateCitizen(out string error)
+    {
+        error = "Proszę uzupełnić dane";
+        if (string.IsNullOrWhiteSpace(model.FirstName)) return false;
+        if (string.IsNullOrWhiteSpace(model.LastName)) return false;
+        if (model.DateOfBirth == DateTime.MinValue) return false;
+        if (model.SexId == 0) return false;
+        if (model.DateOfBirth > DateTime.Now)
+        {
+            error = "Nieprawidłowa data";
+            return false;
+        }
+
+        return true;
+    }
+}
+
 
