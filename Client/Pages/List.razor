@@ -1,4 +1,6 @@
 ﻿@page "/list"
+@using System.Text
+@inject IJSRuntime js
 
 @inject Blazored.LocalStorage.ILocalStorageService localStorage
 <PageTitle>Obywatel ver. 1.0</PageTitle>
@@ -9,10 +11,19 @@
      <RadzenDataGrid AllowFiltering="true" AllowColumnResize="true" FilterMode="FilterMode.Simple" AllowSorting="true" PageSize="10" AllowPaging="true" PagerHorizontalAlign="HorizontalAlign.Left" ShowPagingSummary="true"
      Data="@registeredCitizens" TItem="Citizen" ColumnWidth="200px" LogicalFilterOperator="LogicalFilterOperator.Or">
           <Columns>
-              <RadzenDataGridColumn TItem="Citizen" Property="LastName" Filterable="true" Title="Nazwisko" TextAlign="TextAlign.Left" />
-              <RadzenDataGridColumn TItem="Citizen" Property="FirstName" Filterable="true" Title="Imię" TextAlign="TextAlign.Left" />
+               <RadzenDataGridColumn Width="50px" TItem="Citizen" Property="Initials" Filterable="false" TextAlign="TextAlign.Center" Sortable="false">
+                  <Template Context="data">
+                      <Avatar Initials="@data.Initials"/>
+                  </Template>
+              </RadzenDataGridColumn>  
+              <RadzenDataGridColumn TItem="Citizen" Property="FullName" Filterable="true" Title="Nazwisko i Imię" TextAlign="TextAlign.Left" />
               <RadzenDataGridColumn TItem="Citizen" Property="DateOfBirthString" Filterable="false" Title="Data urodzenia" TextAlign="TextAlign.Left" />
               <RadzenDataGridColumn TItem="Citizen" Property="PESEL" Filterable="false" Title="PESEL" TextAlign="TextAlign.Left" />    
+              <RadzenDataGridColumn TItem="Citizen" Property="Id" Filterable="false" TextAlign="TextAlign.Center" Sortable="false">
+                  <Template Context="data">
+                      <RadzenButton Size=ButtonSize.Small ButtonStyle="ButtonStyle.Primary" Click="() => GeneratePdf(data.Id)">Generuj potwierdzenie</RadzenButton>
+                  </Template>
+              </RadzenDataGridColumn>  
           </Columns>
     </RadzenDataGrid>
 }
@@ -41,5 +52,12 @@
             registeredCitizens = JsonConvert.DeserializeObject<List<Citizen>>(cookie);
             currentIndex = registeredCitizens.Count;
         }
+    }
+
+    void GeneratePdf(int id)
+    {
+        var citizen = registeredCitizens.FirstOrDefault(c => c.Id == id);
+        var pdf = new PDFGenerator();
+        pdf.Generate(js, citizen, $"potwierdzenie_{citizen.LastName}.pdf");
     }
 }

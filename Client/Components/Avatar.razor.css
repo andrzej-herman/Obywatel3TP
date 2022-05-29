@@ -1,0 +1,17 @@
+﻿.initals-container {
+    margin-left: 25px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: blueviolet;
+    height: 40px;
+    width: 40px;
+    border-radius: 50px;
+    color: white;
+}
+
+.initals {
+    color: white !important;
+    font-size: 16px !important;
+    font-weight: bold !important;
+}
